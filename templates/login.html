@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - MSPVL College</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="shortcut icon" href="{{url_for('static', filename = 'favicon.png' )}}">
+
+<style>
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.login-container { max-width: 450px; width: 100%; }
+.card { border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+.card-header {
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    color:white;text-align:center;padding:30px;
+}
+.college-logo {
+    width:80px;height:80px;background:white;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    margin:auto;margin-bottom:15px;
+}
+.college-logo i { font-size:40px;color:#667eea; }
+.form-group { margin-bottom:20px; }
+.input-group { border:2px solid #ddd;border-radius:10px; }
+.input-group-text { background:#f8f9fa;border:none;color:#667eea; }
+.form-control, .form-select { border:none; }
+.btn-login {
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    color:white;border:none;border-radius:10px;width:100%;
+    padding:12px;font-weight:600;
+}
+.btn-login:hover { box-shadow:0 5px 20px rgba(102,126,234,.5); }
+.divider { text-align:center;margin:20px 0;position:relative; }
+.divider::before { content:"";height:1px;background:#ddd;position:absolute;left:0;right:0;top:50%; }
+.divider span { background:white;padding:0 10px;position:relative; }
+.btn-complete-profile {
+    border:2px solid #667eea;border-radius:10px;padding:10px;
+    text-align:center;display:block;color:#667eea;text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+<div class="login-container">
+<div class="card">
+<div class="card-header">
+    <div class="college-logo"><i class="fas fa-university"></i></div>
+    <h2>MSPVL College</h2>
+    <p>Access your dashboard</p>
+</div>
+
+<div class="card-body">
+<div id="messageContainer"></div>
+
+<form id="loginForm">
+    <div class="form-group">
+        <label>Login Type</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user-shield"></i></span>
+            <select class="form-select" id="role" required>
+                <option value="student">Student Login</option>
+                <option value="admin">Administrator Login</option>
+                <option value="parent">Parent Login</option> 
+                <option value="visitor">Visitor Login</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Username or Email</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            <input type="text" class="form-control" id="username" placeholder="Enter email or username" required>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Password</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+            <span class="input-group-text" onclick="togglePassword()" style="cursor:pointer;">
+                <i class="fas fa-eye" id="toggleIcon"></i>
+            </span>
+        </div>
+    </div>
+
+    <button class="btn-login" id="loginBtn">
+        <i class="fas fa-sign-in-alt me-2"></i>Login Now
+    </button>
+</form>
+
+<div class="divider"><span>OR</span></div>
+
+<a href="/signup" class="btn-complete-profile mb-2">
+    <i class="fas fa-user-graduate me-2"></i> Create Student Account
+</a>
+
+<a href="/visitor_signup" class="text-center d-block text-primary mt-2" style="text-decoration:none; font-size: 0.9rem;">
+    Register as Parent or Visitor
+</a>
+
+</div>
+</div>
+</div>
+
+<script>
+function togglePassword(){
+    let p=document.getElementById("password");
+    let i=document.getElementById("toggleIcon");
+    if(p.type==="password"){p.type="text";i.className="fas fa-eye-slash";}
+    else{p.type="password";i.className="fas fa-eye";}
+}
+
+function showMessage(type,text){
+    document.getElementById("messageContainer").innerHTML=
+    `<div class="alert alert-${type}">${text}</div>`;
+}
+
+document.getElementById("loginForm").addEventListener("submit",async(e)=>{
+    e.preventDefault();
+    let username=document.getElementById("username").value;
+    let password=document.getElementById("password").value;
+    let role=document.getElementById("role").value;
+
+    let res=await fetch("/api/login",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username, password, role})
+    });
+
+    let data=await res.json();
+    if(data.success){
+        showMessage("success", "Login successful! Redirecting...");
+        setTimeout(()=>{window.location.href=data.redirect},1000);
+    }else{
+        showMessage("danger", data.message);
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel - MSPVL College</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="{{url_for('static', filename = 'favicon.png')}}">
+    <style>
+        .log-table { font-size: 0.85rem; }
+        .user-agent-text { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container mt-5 mb-5">
+    <div class="card shadow p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="fas fa-users-graduate me-2"></i>Admin Panel - Student Records</h3>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
+        </div>
+
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Roll No</th>
+                    <th>Course</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>{{ s.user_id }}</td>
+                    <td>{{ s.full_name }}</td>
+                    <td>{{ s.roll_number }}</td>
+                    <td>{{ s.course_enrolled }}</td>
+                    <td>
+                        <a href="/edit_profile/{{ s.user_id }}" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card shadow p-4">
+        <h3 class="mb-3 text-secondary"><i class="fas fa-history me-2"></i>Recent Activity Logs</h3>
+        
+        <div class="mt-4">
+    <h3><i class="fas fa-history me-2"></i>Recent Activity Logs</h3>
+    <table class="table table-bordered table-striped">
+        <thead class="table-secondary">
+            <tr>
+                <th>User ID</th>
+                <th>Activity</th>
+                <th>IP Address</th>
+                <th>Device/Browser</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><strong>#{{ log.user_id }}</strong></td>
+                
+                <td>
+                    <span class="badge {% if 'Chatbot' in log.activity %}bg-info text-dark{% else %}bg-light text-dark border{% endif %}">
+                        {{ log.activity }}
+                    </span>
+                </td>
+                
+                <td><code>{{ log.ip_address }}</code></td>
+                
+                <td class="small text-truncate" style="max-width: 200px;" title="{{ log.user_agent }}">
+                    {{ log.user_agent }}
+                </td>
+                
+                <td class="text-muted">{{ log.created_at }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">Database is empty or connection failed.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+        {% if not logs %}
+        <div class="text-center py-3 text-muted">
+            <p>No activity recorded yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Complete Profile</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="shortcut icon" href="{{url_for('static', filename = 'favicon.png')}}">
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+<div class="card shadow p-4">
+<h3 class="text-center mb-3">Complete Student Profile</h3>
+
+<form id="profileForm" class="row g-3">
+
+<div class="col-md-6">
+<input class="form-control" name="roll_number" placeholder="Roll Number" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="admission_number" placeholder="Admission Number" required>
+</div>
+
+<div class="col-md-12">
+<input class="form-control" name="full_name" placeholder="Full Name" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" type="date" name="date_of_birth" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="phone_number" placeholder="Phone Number" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="aadhar_number" placeholder="Aadhar Number" required>
+</div>
+
+<!-- ✅ Course dropdown -->
+<div class="col-md-6">
+<select class="form-select" name="course_enrolled" required>
+    <option value="">-- Select Course --</option>
+    <option value="Information Technology">Information Technology</option>
+    <option value="Computer Science">Computer Science</option>
+    <option value="Mechanical">Mechanical</option>
+    <option value="Auto-Mobile">Auto-Mobile</option>
+    <option value="Civil">Civil</option>
+    <option value="ECE">ECE</option>
+    <option value="EEE">EEE</option>
+</select>
+</div>
+
+<div class="col-md-12">
+<input class="form-control" name="address" placeholder="Address" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control" name="city" placeholder="City" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control" name="state" placeholder="State" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control" name="pincode" placeholder="Pincode" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="guardian_name" placeholder="Guardian Name" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="guardian_phone" placeholder="Guardian Phone" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="tenth_school" placeholder="10th School" required>
+</div>
+
+<div class="col-md-6">
+<input class="form-control" name="tenth_percentage" placeholder="10th Percentage" required>
+</div>
+
+<div class="col-md-12">
+<input class="form-control" name="emergency_contact" placeholder="Emergency Contact" required>
+</div>
+
+<div class="col-md-12">
+<button class="btn btn-success w-100 mt-3">Save Profile</button>
+</div>
+
+</form>
+</div>
+</div>
+
+<script>
+document.getElementById("profileForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    let formData = new FormData(this);
+
+    let res = await fetch("/api/completepr", {
+        method: "POST",
+        body: formData
+    });
+
+    let data = await res.json();
+
+    if (data.success) {
+        window.location.href = data.redirect; // ✅ redirect to login
+    } else {
+        alert("Error saving profile");
+    }
+});
+</script>
+
+
+</body>
+</html>
