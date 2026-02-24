@@ -81,7 +81,7 @@ body {
         <label>Username or Email</label>
         <div class="input-group">
             <span class="input-group-text"><i class="fas fa-user"></i></span>
-            <input type="text" class="form-control" id="username" placeholder="Enter email or username" required>
+            <input type="text" class="form-control" id="username" placeholder="Enter email or username" required autocomplete="off">
         </div>
     </div>
 
@@ -89,7 +89,7 @@ body {
         <label>Password</label>
         <div class="input-group">
             <span class="input-group-text"><i class="fas fa-lock"></i></span>
-            <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+            <input type="password" class="form-control" id="password" placeholder="Enter password" required autocomplete="new-password">
             <span class="input-group-text" onclick="togglePassword()" style="cursor:pointer;">
                 <i class="fas fa-eye" id="toggleIcon"></i>
             </span>

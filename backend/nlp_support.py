@@ -28,6 +28,7 @@ def get_bot_response(user_text, student_data=None):
 
         # English Keywords
         "admission": ("Admissions for 2026 are open until July 31st. You can apply via the portal in the Admin section.", "admission_info", 0.95),
+	"exam fees": ("The Exam fees of the semester is 💵600 rupees.","exam_fees",0.98),
         "fee": ("Course fees at MSPVL range from ₹35,000 to ₹55,000 per semester.", "fee_inquiry", 0.95),
         "scholarships": ("We support NSP and State scholarships based on merit and community. Apply through the Scholarship portal.", "scholarship_info", 0.98),
         "hostel": ("We offer separate secure hostels for boys and girls with Wi-Fi and mess facilities.", "hostel_info", 0.90),
