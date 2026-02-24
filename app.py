@@ -7,13 +7,18 @@ import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
 import google.generativeai as genai # Added Gemini library
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 app.url_map.strict_slashes = False
 
 # --- GEMINI AI CONFIGURATION ---
-genai.configure(api_key="AIzaSyAeTokpZ-wv1sGlcRp9DeQMUX_xwJZOEWY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
 # --- MAIL CONFIGURATION ---
