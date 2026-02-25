@@ -494,43 +494,66 @@ def handle_chat_main():
         cur.execute("SELECT * FROM completepr_student WHERE user_id = %s", (user_id,))
         student_data = cur.fetchone()
 
-        # 1️⃣ ALWAYS TRY GEMINI FIRST (handles ANY question)
-        bot_text = "I'm the MSPVL Assistant. Ask me anything!"
-        intent = "gemini_ai"
-        confidence = 1.0
+        # 🔥 HYBRID LOGIC: NLP FIRST (Fast + College-specific)
+        print(f"🧠 NLP testing: '{user_text}'")
+        nlp_text, nlp_intent, nlp_confidence = get_bot_response(user_text, student_data)
+        print(f"🧠 NLP result: '{nlp_text[:50]}...' (conf={nlp_confidence})")
+        
+        bot_text = nlp_text
+        intent = nlp_intent
+        confidence = nlp_confidence
 
-        if gemini_model:
-            try:
-                # Build smart context
-                context = f"You are MSPVL College AI Assistant. "
-                if student_data:
-                    context += f"Student: {student_data['full_name']} (Roll: {student_data['roll_number']}, Course: {student_data['course_enrolled']}). "
-                context += f"Current time: {datetime.now().strftime('%d %b %Y, %I:%M %p')}. Answer: {user_text}"
-
-                response = gemini_model.generate_content(context)
-                if response and response.text.strip():
-                    bot_text = response.text.strip()
-                else:
-                    bot_text = "I understand your question! Ask about college or anything else."
-                
-            except Exception as e:
-                print(f"Gemini error: {e}")
-                # 2️⃣ NLP FALLBACK (if Gemini fails)
-                bot_text, intent, confidence = get_bot_response(user_text, student_data)
+        # 🎯 NLP WINS: High confidence OR college keywords
+        college_keywords = [
+            'fee', 'admission', 'course', 'exam', 'hostel', 'placement', 
+            'scholarship', 'syllabus', 'eligibility', 'canteen', 'library',
+            'diploma', 'roll', 'department', 'attendance', 'uniform'
+        ]
+        
+        is_college_query = any(keyword in user_text.lower() for keyword in college_keywords)
+        
+        if nlp_confidence >= 0.85 or is_college_query:
+            print("✅ NLP WIN - Fast college answer!")
+            # NLP perfect → Use it (0.01s vs 3s Gemini)
         else:
-            # 3️⃣ NLP ONLY (no Gemini key)
-            bot_text, intent, confidence = get_bot_response(user_text, student_data)
+            # 🤖 GEMINI for general/low-confidence questions
+            print("🤖 GEMINI activated - General question")
+            if gemini_model:
+                try:
+                    context = f"""You are MSPVL College AI Assistant. 
+Student: {student_data['full_name'] if student_data else 'Visitor'} 
+Time: {datetime.now().strftime('%d %b %Y, %I:%M %p')}
+NLP failed (conf={nlp_confidence:.2f}): {user_text}
+Answer naturally but mention you're from MSPVL College if relevant."""
+                    
+                    response = gemini_model.generate_content(context)
+                    if response and response.text.strip():
+                        bot_text = response.text.strip()
+                        intent = "gemini_general"
+                        confidence = 0.95
+                    else:
+                        bot_text = nlp_text  # Fallback to NLP
+                        
+                except Exception as e:
+                    print(f"❌ Gemini failed: {e}")
+                    bot_text = nlp_text  # NLP backup
+                    intent = nlp_intent
+            else:
+                print("⚪ No Gemini → NLP fallback")
+                bot_text = nlp_text
 
-        # Save messages to DB
+        # Save messages to DB (ALL features preserved)
         cur.execute("INSERT INTO chat_messages (sender_id, message, is_ai_response, intent) VALUES (%s, %s, 0, %s)", (user_id, user_text, "user"))
         cur.execute("INSERT INTO chat_messages (sender_id, message, is_ai_response, intent) VALUES (%s, %s, 1, %s)", (user_id, bot_text, intent))
         conn.commit()
 
+        print(f"🎯 FINAL: {intent} | '{bot_text[:30]}...'")
         return jsonify({
             "success": True, 
             "response": bot_text,
             "intent": intent,
-            "confidence": confidence
+            "confidence": confidence,
+            "source": "NLP" if confidence >= 0.85 else "Gemini"
         })
 
     except Exception as e:
