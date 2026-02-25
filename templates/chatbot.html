@@ -59,72 +59,90 @@
         .message.user .message-bubble { background: var(--user-bg); color: #1f2937; border-bottom-right-radius: 4px; }
         .message.ai .message-bubble { background: var(--ai-bg); color: #1f2937; border-bottom-left-radius: 4px; }
 
-        .input-area { background: white; border: 2px solid #e5e7eb; border-radius: 15px; padding: 12px; display: flex; gap: 10px; align-items: center; }
+        .input-area { 
+            background: white; border: 2px solid #e5e7eb; border-radius: 15px; 
+            padding: 12px; display: flex; gap: 10px; align-items: center; 
+        }
         .chat-input { flex: 1; border: none; outline: none; font-size: 1rem; }
         
-        .action-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .action-btn { 
+            width: 42px; height: 42px; border-radius: 50%; border: none; 
+            background: var(--primary); color: white; display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; transition: all 0.2s; 
+        }
         .action-btn.secondary { background: #f3f4f6; color: #6b7280; }
+        .action-btn:hover { transform: scale(1.05); }
         
-        @media (max-width: 992px) { .chat-sidebar { display: none; } }
-
+        /* 🔥 ADMIN BUTTON SPECIAL STYLE */
+        #adminBtn {
+            background: #f59e0b !important; /* Orange for attention */
+            color: white !important;
+        }
+        #adminBtn:hover {
+            background: #d97706 !important;
+            transform: scale(1.1) !important;
+        }
+        
         #loader-wrapper {
-            position: fixed;
-             top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999; /* Ensures it stays on top */
-            transition: opacity 0.5s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff; display: flex; justify-content: center; align-items: center;
+            z-index: 9999; transition: opacity 0.5s ease;
         }
 
         .loader-content { text-align: center; }
-
         .loader-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
+            width: 80px; height: 80px; margin-bottom: 20px;
             animation: pulse 2s infinite ease-in-out;
         }
-
         .loader-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            margin: 0 auto 10px;
-            animation: spin 1s linear infinite;
+            width: 40px; height: 40px; border: 4px solid #f3f4f6;
+            border-top: 4px solid var(--primary); border-radius: 50%;
+            margin: 0 auto 10px; animation: spin 1s linear infinite;
         }
 
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
-
+        
+        @media (max-width: 992px) { 
+            .chat-sidebar { display: none; }
+        }
     </style>
 </head>
 <body>
+    <!-- LOADER -->
     <div id="loader-wrapper">
-    <div class="loader-content">
-        <img src="{{ url_for('static', filename='favicon.png') }}" alt="MSPVL Logo" class="loader-icon">
-        <div class="loader-spinner"></div>
-        <p>Initializing MSPVL Assistant...</p>
+        <div class="loader-content">
+            <img src="{{ url_for('static', filename='favicon.png') }}" alt="MSPVL Logo" class="loader-icon">
+            <div class="loader-spinner"></div>
+            <p>Initializing MSPVL Assistant...</p>
+        </div>
     </div>
-    </div>
+
     <div class="container py-4">
-        <a href="/student_dashboard" class="btn btn-light mb-3 btn-sm"><i class="fas fa-arrow-left me-2"></i>Back</a>
+        <a href="/student_dashboard" class="btn btn-light mb-3 btn-sm">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
         
         <div class="chatbot-container">
+            <!-- HEADER - NO NOTIFICATION BELL -->
             <div class="chat-header">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width:45px; height:45px;"><i class="fas fa-robot"></i></div>
-                    <div><h5 class="mb-0">MSPVL Assistant</h5><small class="opacity-75">Online • Ganax AI</small></div>
+                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width:45px; height:45px;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0">MSPVL Assistant</h5>
+                        <small class="opacity-75">Online • Ganax AI</small>
+                    </div>
                 </div>
                 <button id="langBtn" class="btn btn-sm btn-outline-light" onclick="toggleLanguage()">
                     <i class="fas fa-language me-1"></i> Switch to Tamil
                 </button>
             </div>
 
+            <!-- CHAT CONTENT -->
             <div class="chat-content">
+                <!-- SIDEBAR -->
                 <div class="chat-sidebar">
                     <div class="quick-questions" id="sidebarContent">
                         <div class="section-title">Common Questions</div>
@@ -142,170 +160,233 @@
                     </div>
                 </div>
 
+                <!-- MAIN CHAT AREA -->
                 <div class="chat-area">
                     <div class="messages-container" id="messagesContainer">
                         <div id="messagesList">
-                            <div class="message ai"><div class="message-bubble shadow-sm">Hello! How can I help you today?</div></div>
+                            <div class="message ai">
+                                <div class="message-bubble shadow-sm">
+                                    Hello! How can I help you today? 👋<br><br>
+                                    <small class="opacity-75">💡 Type your question or click <strong>👔 ADMIN</strong> button for human support</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- SINGLE INPUT AREA - ADMIN BUTTON INCLUDED -->
                     <div class="input-area">
-                        <button class="action-btn secondary" id="voiceToggleBtn" onclick="toggleVoiceInput()"><i class="fas fa-microphone"></i></button>
-                        <input type="text" class="chat-input" id="messageInput" placeholder="Type or use voice..." onkeypress="handleKeyPress(event)">
-                        <button class="action-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
-                        <button class="action-btn secondary" onclick="location.reload()"><i class="fas fa-sync-alt"></i></button>
+                        <button class="action-btn secondary" id="voiceToggleBtn" onclick="toggleVoiceInput()">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        
+                        <input type="text" class="chat-input" id="messageInput" 
+                               placeholder="Type your question or click 👔 ADMIN..." 
+                               onkeypress="handleKeyPress(event)">
+                        
+                        <!-- 🔥 ADMIN BUTTON - ORANGE FOR ATTENTION -->
+                        <button class="action-btn secondary" id="adminBtn" onclick="sendToAdmin()" title="Talk to Admin">
+                            <i class="fas fa-user-tie"></i>
+                        </button>
+                        
+                        <button class="action-btn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button class="action-btn secondary" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- PERFECT JAVASCRIPT - NO NOTIFICATIONS -->
     <script>
-    window.addEventListener('load', function() {
-    const loader = document.getElementById('loader-wrapper');
-    // Give it a small delay so the user actually sees the nice icon
-    setTimeout(() => {
-        loader.style.opacity = '0';
-        setTimeout(() => {
-            loader.style.display = 'none';
-        }, 500);
-    }, 1500);
-    });
-    const API_BASE = '/api'; 
-    let currentLang = 'en-US';
-    let isListening = false;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
+        // LOADER
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('loader-wrapper');
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 500);
+            }, 1500);
+        });
 
-    const tamilSidebar = `
-        <div class="section-title">பொதுவான கேள்விகள்</div>
-        <div class="question-chip" onclick="sendQuickQuestion(this)">சேர்க்கை தேதிகள்?</div>
-        <div class="question-chip" onclick="sendQuickQuestion(this)">கல்வி கட்டணம்?</div>
-        <div class="question-chip" onclick="sendQuickQuestion(this)">உதவித்தொகை</div>
-        <div class="question-chip" onclick="sendQuickQuestion(this)">விடுதி வசதிகள்</div>
-        <div class="section-title mt-4">பாடப்பிரிவுகள்</div>
-        <div class="question-chip" onclick="sendQuickQuestion(this)">கணினி அறிவியல்</div>
-        <div class="question-chip" onclick="sendQuickQuestion(this)">மெக்கானிக்கல்</div>
-    `;
-    const englishSidebar = document.getElementById('sidebarContent').innerHTML;
+        const API_BASE = '/api'; 
+        let currentLang = 'en-US';
+        let isListening = false;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
 
-    function toggleLanguage() {
-        const btn = document.getElementById('langBtn');
-        const sidebar = document.getElementById('sidebarContent');
-        if (currentLang === 'en-US') {
-            currentLang = 'ta-IN';
-            btn.innerHTML = '<i class="fas fa-language me-1"></i> Switch to English';
-            sidebar.innerHTML = tamilSidebar;
-        } else {
-            currentLang = 'en-US';
-            btn.innerHTML = '<i class="fas fa-language me-1"></i> Switch to Tamil';
-            sidebar.innerHTML = englishSidebar;
-        }
-        if (recognition) recognition.lang = currentLang;
-        window.speechSynthesis.cancel();
-    }
+        const tamilSidebar = `
+            <div class="section-title">பொதுவான கேள்விகள்</div>
+            <div class="question-chip" onclick="sendQuickQuestion(this)">சேர்க்கை தேதிகள்?</div>
+            <div class="question-chip" onclick="sendQuickQuestion(this)">கல்வி கட்டணம்?</div>
+            <div class="question-chip" onclick="sendQuickQuestion(this)">உதவித்தொகை</div>
+            <div class="question-chip" onclick="sendQuickQuestion(this)">விடுதி வசதிகள்</div>
+            <div class="section-title mt-4">பாடப்பிரிவுகள்</div>
+            <div class="question-chip" onclick="sendQuickQuestion(this)">கணினி அறிவியல்</div>
+            <div class="question-chip" onclick="sendQuickQuestion(this)">மெக்கானிக்கல்</div>
+        `;
+        const englishSidebar = document.getElementById('sidebarContent').innerHTML;
 
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.interimResults = false; // Set to false to avoid double-triggering
-        recognition.lang = currentLang;
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById('messageInput').value = transcript;
-            if (event.results[0].isFinal) { 
-                sendMessage(); 
-                toggleVoiceUI(false); 
-            }
-        };
-        recognition.onend = () => toggleVoiceUI(false);
-    }
-
-    function toggleVoiceInput() {
-        if (!SpeechRecognition) return alert("Speech recognition not supported.");
-        isListening ? recognition.stop() : (recognition.start(), toggleVoiceUI(true));
-    }
-
-    function toggleVoiceUI(active) {
-        isListening = active;
-        const btn = document.getElementById('voiceToggleBtn');
-        btn.style.background = active ? "#ef4444" : "#f3f4f6";
-        btn.style.color = active ? "white" : "#6b7280";
-        btn.innerHTML = active ? '<i class="fas fa-stop"></i>' : '<i class="fas fa-microphone"></i>';
-    }
-
-    function speak(text) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            const voices = window.speechSynthesis.getVoices();
+        // 🔥 ADMIN BUTTON FUNCTION - PERFECT
+        async function sendToAdmin() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
             
-            // Detect Tamil characters using proper Unicode range
-            const isTamil = /[\u0B80-\u0BFF]/.test(text); 
-            const langCode = isTamil ? 'ta-IN' : 'en-US';
-
-            // Find Female voices
-            let selectedVoice = voices.find(v => {
-                const name = v.name.toLowerCase();
-                const lang = v.lang.toLowerCase();
-                const isFemaleName = name.includes('samantha') || name.includes('zira') || 
-                                     name.includes('female') || name.includes('google us english') ||
-                                     name.includes('vaani') || name.includes('pallavi') || name.includes('heera');
-                return lang.startsWith(langCode.split('-')[0]) && isFemaleName;
-            });
-
-            if (!selectedVoice) {
-                selectedVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+            if (!message) {
+                alert("Please type your query first!");
+                return;
             }
-
-            if (selectedVoice) utterance.voice = selectedVoice;
-            utterance.lang = langCode;
-            utterance.pitch = 1.25; 
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    async function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const message = input.value.trim();
-        if (!message) return;
-
-        renderMessageUI(message, 'user');
-        input.value = '';
-
-        try {
-            const res = await fetch(`${API_BASE}/chat/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message })
-            });
-            const data = await res.json();
-            if (data.success) {
-                renderMessageUI(data.response, 'ai');
-                // Ensure voices are loaded before calling speak
-                if (window.speechSynthesis.getVoices().length > 0) {
+            
+            // Show user message
+            renderMessageUI(message, 'user');
+            input.value = '';
+            
+            try {
+                const res = await fetch(`${API_BASE}/chat/send-to-admin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderMessageUI(data.response, 'ai');
                     speak(data.response);
                 } else {
-                    window.speechSynthesis.onvoiceschanged = () => speak(data.response);
+                    renderMessageUI("Failed to send query. Try again!", 'ai');
                 }
+            } catch (e) {
+                renderMessageUI("Sorry, couldn't send to admin. Try again!", 'ai');
+                console.error("Admin send error:", e);
             }
-        } catch (e) { console.error("Error sending message:", e); }
-    }
+        }
 
-    function renderMessageUI(content, sender) {
-        const list = document.getElementById('messagesList');
-        const html = `<div class="message ${sender}"><div class="message-bubble shadow-sm">${content}</div></div>`;
-        list.insertAdjacentHTML('beforeend', html);
-        const container = document.getElementById('messagesContainer');
-        container.scrollTop = container.scrollHeight;
-    }
+        // LANGUAGE TOGGLE
+        function toggleLanguage() {
+            const btn = document.getElementById('langBtn');
+            const sidebar = document.getElementById('sidebarContent');
+            if (currentLang === 'en-US') {
+                currentLang = 'ta-IN';
+                btn.innerHTML = '<i class="fas fa-language me-1"></i> Switch to English';
+                sidebar.innerHTML = tamilSidebar;
+            } else {
+                currentLang = 'en-US';
+                btn.innerHTML = '<i class="fas fa-language me-1"></i> Switch to Tamil';
+                sidebar.innerHTML = englishSidebar;
+            }
+            if (recognition) recognition.lang = currentLang;
+            window.speechSynthesis.cancel();
+        }
 
-    function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-    function sendQuickQuestion(el) { document.getElementById('messageInput').value = el.textContent; sendMessage(); }
-    
-    // Initial fetch of voices for browser cache
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        // VOICE SUPPORT
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.interimResults = false;
+            recognition.lang = currentLang;
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('messageInput').value = transcript;
+                if (event.results[0].isFinal) { 
+                    sendMessage(); 
+                    toggleVoiceUI(false); 
+                }
+            };
+            recognition.onend = () => toggleVoiceUI(false);
+        }
+
+        function toggleVoiceInput() {
+            if (!SpeechRecognition) return alert("Speech recognition not supported.");
+            isListening ? recognition.stop() : (recognition.start(), toggleVoiceUI(true));
+        }
+
+        function toggleVoiceUI(active) {
+            isListening = active;
+            const btn = document.getElementById('voiceToggleBtn');
+            btn.style.background = active ? "#ef4444" : "#f3f4f6";
+            btn.style.color = active ? "white" : "#6b7280";
+            btn.innerHTML = active ? '<i class="fas fa-stop"></i>' : '<i class="fas fa-microphone"></i>';
+        }
+
+        // SPEAK RESPONSE
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                const voices = window.speechSynthesis.getVoices();
+                
+                const isTamil = /[\u0B80-\u0BFF]/.test(text); 
+                const langCode = isTamil ? 'ta-IN' : 'en-US';
+
+                let selectedVoice = voices.find(v => {
+                    const name = v.name.toLowerCase();
+                    const lang = v.lang.toLowerCase();
+                    const isFemaleName = name.includes('samantha') || name.includes('zira') || 
+                                          name.includes('female') || name.includes('google us english') ||
+                                          name.includes('vaani') || name.includes('pallavi') || name.includes('heera');
+                    return lang.startsWith(langCode.split('-')[0]) && isFemaleName;
+                });
+
+                if (!selectedVoice) {
+                    selectedVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+                }
+
+                if (selectedVoice) utterance.voice = selectedVoice;
+                utterance.lang = langCode;
+                utterance.pitch = 1.25; 
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // MAIN CHAT
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            renderMessageUI(message, 'user');
+            input.value = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/chat/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    renderMessageUI(data.response, 'ai');
+                    if (window.speechSynthesis.getVoices().length > 0) {
+                        speak(data.response);
+                    } else {
+                        window.speechSynthesis.onvoiceschanged = () => speak(data.response);
+                    }
+                }
+            } catch (e) { 
+                renderMessageUI("Sorry, something went wrong. Try again!", 'ai');
+                console.error("Chat error:", e); 
+            }
+        }
+
+        function renderMessageUI(content, sender) {
+            const list = document.getElementById('messagesList');
+            const html = `<div class="message ${sender}"><div class="message-bubble shadow-sm">${content}</div></div>`;
+            list.insertAdjacentHTML('beforeend', html);
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function sendQuickQuestion(el) { 
+            document.getElementById('messageInput').value = el.textContent; 
+            sendMessage(); 
+        }
+        
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
     </script>
 </body>
 </html>

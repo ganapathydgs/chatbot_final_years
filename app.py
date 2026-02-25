@@ -18,8 +18,64 @@ app.secret_key = "secret123"
 app.url_map.strict_slashes = False
 
 # --- GEMINI AI CONFIGURATION ---
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+gemini_model = None
+if GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+    except Exception as e:
+        print(f"Gemini init error: {e}")
+
+
+def test_gemini_connection():
+    """🧪 Test Gemini API key on startup - returns status"""
+    global gemini_model
+    
+    print("\n🔍 TESTING GEMINI API CONNECTION...")
+    print("=" * 50)
+    
+    # 1. Check .env file exists
+    if not os.path.exists('.env'):
+        print("❌ .env file MISSING!")
+        print("   → Create .env with: GEMINI_API_KEY=your_key_here")
+        return False
+    
+    # 2. Check API key loaded
+    if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_key_here":
+        print("❌ GEMINI_API_KEY missing or invalid in .env")
+        return False
+    
+    # 3. Try actual API call (REAL VALIDATION)
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        # Send test prompt (takes 2-3 seconds)
+        response = model.generate_content("Say 'API WORKS!'")
+        test_result = response.text.strip()
+        
+        if "API WORKS" in test_result.upper():
+            print("✅ GEMINI API KEY VALID ✓")
+            print(f"   🟢 Model: gemini-1.5-flash")
+            print(f"   📡 Latency: {len(test_result)} chars")
+            gemini_model = model  # Set global model
+            return True
+        else:
+            print("❌ API responded but unexpected result")
+            return False
+            
+    except Exception as e:
+        error_msg = str(e).lower()
+        print(f"❌ GEMINI API ERROR: {e}")
+        if "invalid key" in error_msg:
+            print("   → Get new key: aistudio.google.com/app/apikey")
+        elif "quota" in error_msg:
+            print("   → Free quota used up")
+        elif "network" in error_msg:
+            print("   → Check internet connection")
+        return False
 
 # --- MAIL CONFIGURATION ---
 ADMIN_EMAIL = "lovelyganapathy10@gmail.com" 
@@ -247,6 +303,176 @@ def update_profile():
     except Exception as e: return jsonify({"success": False, "message": str(e)})
     finally: cur.close(); conn.close()
 
+    # notification for the admins
+def send_admin_query_email(user_name, user_role, user_email, query_text, query_id):
+    """Send NEW admin query to admin email"""
+    try:
+        subject = f"🚨 NEW STUDENT QUERY #{query_id}"
+        body = f"""
+🚨 NEW ADMIN QUERY RECEIVED!
+
+Student: {user_name} ({user_role})
+Email: {user_email}
+Query ID: #{query_id}
+Time: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+QUERY:
+{query_text}
+
+---
+🔗 Reply: http://localhost:5000/admin_queries
+---
+        """
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = ADMIN_EMAIL
+        
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+            server.send_message(msg)
+        print(f"✅ Admin query email sent for #{query_id}")
+        return True
+    except Exception as e:
+        print(f"Admin query email error: {e}")
+        return False
+
+
+@app.route('/api/chat/send-to-admin', methods=['POST'])
+def send_to_admin():
+    user_id = session.get('user_id', 0)
+    role = session.get('role', 'visitor')
+    data = request.get_json()
+    message = data.get("message", "").strip()
+    
+    if not message:
+        return jsonify({"success": False, "message": "Message cannot be empty"}), 400
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        username = session.get('username', 'Visitor')
+        
+        # Get user email
+        cur.execute("SELECT email FROM user WHERE id = %s", (user_id,))
+        user_row = cur.fetchone()
+        user_email = user_row['email'] if user_row else 'Not registered'
+        
+        # Save to database
+        cur.execute("""
+            INSERT INTO admin_queries (user_id, username, role, query, status, created_at) 
+            VALUES (%s, %s, %s, %s, 'pending', NOW())
+        """, (user_id, username, role, message))
+        query_id = cur.lastrowid
+        
+        conn.commit()
+        
+        # Send email to admin
+        send_admin_query_email(username, role, user_email, message, query_id)
+        
+        # Log activity
+        save_activity_log(0, f"🚨 ADMIN QUERY #{query_id}: {message[:100]}... from {username}")
+        
+        return jsonify({
+            "success": True, 
+            "response": f"✅ Query sent to admin (ID: #{query_id})! Email notification sent.",
+            "intent": "admin_query_sent"
+        })
+    except Exception as e:
+        conn.rollback()
+        print(f"Admin query error: {e}")
+        return jsonify({"success": False, "message": "Failed to send query"}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+# Admin view route (add to admin_dashboard)
+@app.route('/admin_queries')
+def admin_queries():
+    if session.get('role') != 'admin':
+        return redirect('/login')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Get pending count
+    cur.execute("SELECT COUNT(*) as pending FROM admin_queries WHERE status = 'pending'")
+    pending_count = cur.fetchone()['pending']
+    
+    # Get all queries
+    cur.execute("""
+        SELECT aq.*, u.email, u.username as user_name
+        FROM admin_queries aq 
+        LEFT JOIN user u ON aq.user_id = u.id 
+        ORDER BY aq.created_at DESC
+    """)
+    queries = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    return render_template('admin_queries.html', queries=queries, pending_count=pending_count)
+
+@app.route('/api/admin_queries/<int:query_id>/reply', methods=['POST'])
+def reply_query(query_id):
+    if session.get('role') != 'admin':
+        return jsonify({"success": False, "message": "Admin only"}), 403
+    
+    response = request.form.get('response', '').strip()
+    if not response:
+        return jsonify({"success": False, "message": "Response required"}), 400
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            UPDATE admin_queries 
+            SET status = 'answered', admin_response = %s, updated_at = NOW()
+            WHERE id = %s
+        """, (response, query_id))  # ✅ MATCHES HTML PERFECTLY
+        
+        conn.commit()
+        
+        # Log activity
+        save_activity_log(0, f"✅ ADMIN REPLIED TO QUERY #{query_id}: {response[:100]}...")
+        
+        return jsonify({"success": True, "response": "✅ Query replied successfully"})
+    except Exception as e:
+        conn.rollback()
+        print(f"Admin reply error: {e}")
+        return jsonify({"success": False, "message": "Failed to reply query"}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
+
+
+# Close an admin query without replying
+@app.route('/api/admin_queries/<int:query_id>/close', methods=['POST'])
+def close_query(query_id):
+    if session.get('role') != 'admin':
+        return jsonify({"success": False, "message": "Admin only"}), 403
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            UPDATE admin_queries 
+            SET status = 'closed', closed_at = NOW() 
+            WHERE id = %s
+        """, (query_id,))
+        conn.commit()
+        save_activity_log(0, f"🛑 ADMIN CLOSED QUERY #{query_id}")
+        return jsonify({"success": True, "message": "Query closed"})
+    except Exception as e:
+        conn.rollback()
+        print(f"Admin close error: {e}")
+        return jsonify({"success": False, "message": "Failed to close query"}), 500
+    finally:
+        cur.close()
+        conn.close()
+
 # ---------------- CHATBOT API (FULL RESTORATION + GEMINI) ----------------
 
 @app.route('/api/chat/send', methods=['POST'])
@@ -254,75 +480,67 @@ def handle_chat_main():
     user_id = session.get('user_id', 0)
     role = session.get('role', 'visitor')
     data = request.get_json()
-    user_text = data.get("message", "")
+    user_text = data.get("message", "").strip()
 
-    # Log activity for admin monitoring
-    save_activity_log(user_id, f"[{role.upper()}] Chatbot Query: {user_text}")
+    # Log activity
+    save_activity_log(user_id, f"[{role.upper()}] Chat: {user_text}")
 
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # 1. Get User Profile for Email/Username
+        # Get user profile + student data
         cur.execute("SELECT email, username FROM user WHERE id = %s", (user_id,))
         user_profile = cur.fetchone() or {'email': 'Visitor@Guest', 'username': 'Visitor'}
-        
-        # 2. CRITICAL: Fetch the Student's Personal Details from the Database
         cur.execute("SELECT * FROM completepr_student WHERE user_id = %s", (user_id,))
         student_data = cur.fetchone()
-        
-        # 3. Try Local NLP (nlp_support.py)
-        bot_text, intent, confidence = get_bot_response(user_text, student_data)
 
-        # Persist the user's message first
-        cur.execute("INSERT INTO chat_messages (sender_id, message, is_ai_response, intent) VALUES (%s, %s, 0, %s)", (user_id, user_text, "user"))
-        
-        # 4. If local bot is unsure, use Gemini with "Personal Context"
-        if intent == "unknown":
+        # 1️⃣ ALWAYS TRY GEMINI FIRST (handles ANY question)
+        bot_text = "I'm the MSPVL Assistant. Ask me anything!"
+        intent = "gemini_ai"
+        confidence = 1.0
+
+        if gemini_model:
             try:
-                # We build a 'Knowledge Base' for Gemini using the database results
+                # Build smart context
+                context = f"You are MSPVL College AI Assistant. "
                 if student_data:
-                    personal_context = (
-                        f"Student Name: {student_data['full_name']}, "
-                        f"Roll No: {student_data['roll_number']}, "
-                        f"Course: {student_data['course_enrolled']}, "
-                        f"Guardian: {student_data['guardian_name']}, "
-                        f"Phone: {student_data['phone_number']}."
-                    )
-                else:
-                    personal_context = "The user is a visitor and has not completed their profile yet."
+                    context += f"Student: {student_data['full_name']} (Roll: {student_data['roll_number']}, Course: {student_data['course_enrolled']}). "
+                context += f"Current time: {datetime.now().strftime('%d %b %Y, %I:%M %p')}. Answer: {user_text}"
 
-                # System prompt combining College Info + Personal Details
-                system_prompt = (
-                    f"You are the MSPVL College AI. Here is the data for the current user: {personal_context}. "
-                    f"Answer the user's question accurately using this data. "
-                    f"User Question: {user_text}"
-                )
-                
-                ai_response = gemini_model.generate_content(system_prompt)
-                
-                if ai_response.text:
-                    bot_text = ai_response.text
-                    intent = "gemini_ai"
+                response = gemini_model.generate_content(context)
+                if response and response.text.strip():
+                    bot_text = response.text.strip()
                 else:
-                    raise Exception("Empty Response")
-
+                    bot_text = "I understand your question! Ask about college or anything else."
+                
             except Exception as e:
-                # Fallback to Admin Email if Gemini fails
-                print(f"Gemini Error: {e}")
-                send_admin_email(user_profile['email'], user_profile['username'], user_text)
-                bot_text = f"I couldn't retrieve that. I've notified the Admin to help you at {user_profile['email']}."
+                print(f"Gemini error: {e}")
+                # 2️⃣ NLP FALLBACK (if Gemini fails)
+                bot_text, intent, confidence = get_bot_response(user_text, student_data)
+        else:
+            # 3️⃣ NLP ONLY (no Gemini key)
+            bot_text, intent, confidence = get_bot_response(user_text, student_data)
 
-        # 5. Log the final message to chat_messages table
-        cur.execute("INSERT INTO chat_messages (sender_id, message, is_ai_response, intent) VALUES (%s, %s, 1, %s)", 
-                    (user_id, bot_text, intent))
+        # Save messages to DB
+        cur.execute("INSERT INTO chat_messages (sender_id, message, is_ai_response, intent) VALUES (%s, %s, 0, %s)", (user_id, user_text, "user"))
+        cur.execute("INSERT INTO chat_messages (sender_id, message, is_ai_response, intent) VALUES (%s, %s, 1, %s)", (user_id, bot_text, intent))
         conn.commit()
-        return jsonify({"success": True, "response": bot_text})
+
+        return jsonify({
+            "success": True, 
+            "response": bot_text,
+            "intent": intent,
+            "confidence": confidence
+        })
+
     except Exception as e:
         conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
+        print(f"Chat Error: {e}")
+        return jsonify({"success": False, "message": "Something went wrong."}), 500
     finally:
         cur.close()
         conn.close()
+
 
 @app.route('/logout')
 def logout():
@@ -330,4 +548,12 @@ def logout():
     session.clear(); return redirect('/login')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+     # 🔥 AUTO-CHECK GEMINI ON STARTUP
+    gemini_status = test_gemini_connection()
+    
+    print("\n🚀 MSPVL College Chatbot Starting...")
+    print(f"📱 Gemini Status: {'🟢 READY' if gemini_status else '🔴 OFFLINE'}")
+    print(f"🧠 NLP Fallback: Always ON")
+    print("=" * 50)
+    
+    app.run(debug=True, host='0.0.0.0', port=5000)
